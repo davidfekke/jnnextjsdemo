@@ -1,16 +1,7 @@
 import Head from 'next/head';
-import { revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import Avweather from '../components/avweather';
-
-var weather = await getWeather('KCRG');
-
-async function weatherAction(data: FormData) {
-  "use server";
-  const identifier = data.get("identifier")?.valueOf() as string;
-  console.log(identifier);
-  weather = await getWeather(identifier)
-  revalidatePath('/')
-}
 
 async function getWeather(identifier: string = 'kcrg') {
   const response = await fetch(`https://avwx.fekke.com/metar/${identifier}`);
@@ -23,6 +14,23 @@ async function getWeather(identifier: string = 'kcrg') {
 }
 
 export default async function Home() {
+  
+  const cookieStore = cookies()
+  const airport_identifier = cookieStore.get('identifier')?.value ?? 'KCRG';
+  let weather = await getWeather(airport_identifier);
+
+  async function weatherAction(data: FormData) {
+    "use server";
+    const identifier = data.get("identifier")?.valueOf() as string;
+
+    cookies().set({
+        name: 'identifier',
+        value: identifier,
+        httpOnly: true,
+        path: '/'
+    });
+  }
+  
   return (
     <main className="flex min-h-screen flex-col items-center  p-24">
       <Head>
